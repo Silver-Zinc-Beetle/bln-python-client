@@ -414,14 +414,10 @@ class Client:
             projects: list of projects where `predicate(project)` is true.
         """
         projects = []
-        for v in self.effectiveProjectRoles():
-            if predicate(v["project"]):
-                projects.append(v["project"])
-
-        if search_open_projects:
-            for v in self.openProjects():
-                if predicate(v):
-                    projects.append(v)
+        projects_to_search = [x["project"] for x in self.effectiveProjectRoles()]
+        for v in projects_to_search if not search_open_projects else projects_to_search + self.openProjects():
+            if predicate(v):
+                projects.append(v)
         return projects
 
     def search_files(self, predicate=lambda f: re.match(".*", f["name"])):
