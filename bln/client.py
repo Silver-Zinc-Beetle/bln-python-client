@@ -285,16 +285,18 @@ class Client:
         self.upload_files(id, files or [])
         return self._gql(q.mutation_updateProject, variables)
 
-    def get_project_by_id(self, id: str):
+    def get_project_by_id(self, id: str, search_open_projects=False):
         """Get the project with the provided id.
 
         Args:
             name (str): The name of the project on biglocalnews.org
+            search_open_projects: (optional) a boolean that toggles additonally searching through the open projects when set to True.
+                Defaults to False.
 
         Returns: Dictionary with project metadata.
         """
         # Search all projects by name
-        project_list = self.search_projects(lambda x: x["id"] == id)
+        project_list = self.search_projects(lambda x: x["id"] == id, search_open_projects)
 
         # If there's no results, throw an error
         if len(project_list) == 0:
@@ -307,16 +309,18 @@ class Client:
         # Otherwise, return the one project found
         return project_list[0]
 
-    def get_project_by_name(self, name: str):
+    def get_project_by_name(self, name: str, search_open_projects=False):
         """Get the project with the provided name.
 
         Args:
             name (str): The name of the project on biglocalnews.org
+            search_open_projects: (optional) a boolean that toggles additonally searching through the open projects when set to True.
+                Defaults to False.
 
         Returns: Dictionary with project metadata.
         """
         # Search all projects by name
-        project_list = self.search_projects(lambda x: x["name"] == name)
+        project_list = self.search_projects(lambda x: x["name"] == name, search_open_projects)
 
         # If there's no results, throw an error
         if len(project_list) == 0:
@@ -396,13 +400,15 @@ class Client:
                 groups.append(v["group"])
         return groups
 
-    def search_projects(self, predicate=lambda p: re.match(".*", p["name"])):
+    def search_projects(self, predicate=lambda p: re.match(".*", p["name"]), search_open_projects=False):
         """Return projects where `predicate(project)` is True.
 
         Args:
             predicate: (optional) a function that takes a project and returns
                 True or False, i.e. if `predicate(project)` returns True, the
                 project is added to the result list.
+            search_open_projects: (optional) a boolean that toggles additonally searching through the open projects when set to True.
+                Defaults to False.
 
         Returns:
             projects: list of projects where `predicate(project)` is true.
@@ -411,6 +417,10 @@ class Client:
         for v in self.effectiveProjectRoles():
             if predicate(v["project"]):
                 projects.append(v["project"])
+        if search_open_projects:
+            for v in self.openProjects():
+                if predicate(v):
+                    projects.append(v)
         return projects
 
     def search_files(self, predicate=lambda f: re.match(".*", f["name"])):
